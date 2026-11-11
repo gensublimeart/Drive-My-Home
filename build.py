@@ -23,8 +23,6 @@ LOGO_SRC = (
 
 TITLE_ZH = "屋企在途中 · 居民預測報告"
 TITLE_EN = "Drive My Home"
-DISCLAIMER = "本網站為藝術科技項目之詮釋性預測（築巢 Weaving Home 藝術詮釋），並非心理／臨床診斷。"
-
 SECTIONS = [
     ("household", "屋企嘅人", "HOUSEHOLD"),
     ("personality", "性格", "PERSONALITY"),
@@ -225,10 +223,6 @@ def header(prefix: str, nav: str) -> str:
   </nav>''' if nav.strip() else ""}"""
 
 
-def footer() -> str:
-    return f'  <footer class="site-footer">《{TITLE_EN}》· ELCHK · 藝術詮釋／非診斷</footer>'
-
-
 def build_index(photos: list[dict]) -> None:
     data = [
         {
@@ -249,11 +243,7 @@ def build_index(photos: list[dict]) -> None:
 <body class="index-body">
 {header("", nav)}
   <main class="flow" id="main">
-    <section class="shell index-intro">
-      <h1 class="brand-title reveal">{TITLE_EN} · {TITLE_ZH}</h1>
-      <p class="brand-subtitle reveal" style="--i:1">{len(photos)} 個巢 · 拖曳或滑動瀏覽，手機上下滑動換屋企，點擊正中屋企睇報告</p>
-      <p class="disclaimer reveal" style="--i:2">{DISCLAIMER}</p>
-    </section>
+    <section class="shell index-intro"></section>
     <div class="flow-stage" id="flow-stage" tabindex="0" role="listbox" aria-label="屋企目錄，用左右鍵瀏覽，Enter 開啟">
       <ol class="flow-fallback">
 {fallback}
@@ -416,7 +406,6 @@ def build_report(photos: list[dict], index: int, scenes: dict[str, dict]) -> Non
     report_data = {
         "id": pid,
         "label": p["label"],
-        "disclaimer": DISCLAIMER,
         "topview": {"notes": scene.get("notes") or "", "objects": scene.get("objects") or []},
         "sections": section_data,
         "evidence": a.get("evidence") or [],
@@ -437,7 +426,6 @@ def build_report(photos: list[dict], index: int, scenes: dict[str, dict]) -> Non
       </div>
       {pager}
     </div>
-    <p class="disclaimer reveal" style="--i:1">{DISCLAIMER}</p>
 
     <div class="figure-pair reveal" style="--i:2">
       <figure>
@@ -473,9 +461,18 @@ def build_report(photos: list[dict], index: int, scenes: dict[str, dict]) -> Non
     </div>
 
     <section class="graph-stage" id="graph-root" aria-label="報告關係圖">
-      <div class="graph-tools">
-        <input id="graph-filter" type="search" placeholder="篩選筆記" aria-label="篩選筆記" />
+      <div class="graph-tools" role="toolbar" aria-label="篩選">
+        <button class="btn is-on" type="button" data-group="all">全部</button>
+        <button class="btn" type="button" data-group="common">有關屋企</button>
+        <button class="btn" type="button" data-group="evidence">創作相關</button>
+        <button class="btn" type="button" data-group="object">物件</button>
       </div>
+      <div class="graph-zoom" role="toolbar" aria-label="縮放">
+        <button class="btn" type="button" data-zoom="out" aria-label="縮小">−</button>
+        <button class="btn" type="button" data-zoom="in" aria-label="放大">+</button>
+        <button class="btn" type="button" data-zoom="reset">重設</button>
+      </div>
+      <p class="graph-hint meta" aria-hidden="true">單指：點選・拖動　雙指：縮放・移動</p>
       <canvas id="graph-canvas"></canvas>
       <aside class="graph-note" id="graph-note" hidden></aside>
     </section>
@@ -488,7 +485,6 @@ def build_report(photos: list[dict], index: int, scenes: dict[str, dict]) -> Non
       {pager}
     </div>
   </main>
-{footer()}
 </body>
 </html>
 """
@@ -523,7 +519,6 @@ def build_keywords() -> None:
     </ol>
   </main>
 {KEYWORD_COUNT_SCRIPT}
-{footer()}
 </body>
 </html>
 """

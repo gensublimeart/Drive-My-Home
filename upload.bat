@@ -42,32 +42,64 @@ if errorlevel 1 (
   git remote set-url origin https://github.com/gensublimeart/Drive-My-Home.git
 )
 
-git push -u origin main
-if errorlevel 1 (
-  echo.
-  echo Push failed.
-  echo If the browser sign-in did not open, create a classic token at
-  echo https://github.com/settings/tokens/new with the repo scope, then run this again.
-  echo When Git asks for a password, paste the token. Do not put the token in this file.
-  pause
-  exit /b 1
-)
+echo.
+echo Sign in to GitHub. This window does not save the token.
+set /p GH_USER=GitHub username: 
+set /p GH_TOKEN=GitHub token: 
+if "%GH_USER%"=="" goto missing_login
+if "%GH_TOKEN%"=="" goto missing_login
 
-where gh >nul 2>&1
-if errorlevel 1 goto pages_manual
-gh auth status >nul 2>&1
-if errorlevel 1 goto pages_manual
+set "ASKPASS=%TEMP%\dmh-git-askpass.cmd"
+(
+  echo @echo off
+  echo echo %%* ^| findstr /I "Username" ^>nul
+  echo if %%errorlevel%%==0 ^(
+  echo   echo %GH_USER%
+  echo ^) else ^(
+  echo   echo %GH_TOKEN%
+  echo ^)
+) > "%ASKPASS%"
 
-gh api --method POST -H "Accept: application/vnd.github+json" /repos/gensublimeart/Drive-My-Home/pages -f "source[branch]=main" -f "source[path]=/" >nul 2>&1
-if errorlevel 1 (
-  gh api --method PUT -H "Accept: application/vnd.github+json" /repos/gensublimeart/Drive-My-Home/pages -f "source[branch]=main" -f "source[path]=/" >nul 2>&1
-)
+set "GIT_ASKPASS=%ASKPASS%"
+set "GIT_TERMINAL_PROMPT=0"
+set "GCM_INTERACTIVE=Never"
+git -c credential.helper= push -u origin main
+set PUSH_ERR=%ERRORLEVEL%
+
+if not "%PUSH_ERR%"=="0" goto push_failed
+
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $h=@{Authorization=('Bearer '+$env:GH_TOKEN);Accept='application/vnd.github+json';'User-Agent'='drive-my-home-upload';'X-GitHub-Api-Version'='2022-11-28'}; $body='{""source"":{""branch"":""main"",""path"":""/""}}'; $u='https://api.github.com/repos/gensublimeart/Drive-My-Home/pages'; $ok=$false; try { Invoke-RestMethod -Method Post -Headers $h -ContentType 'application/json' -Body $body -Uri $u | Out-Null; $ok=$true } catch {}; if (-not $ok) { try { Invoke-RestMethod -Method Put -Headers $h -ContentType 'application/json' -Body $body -Uri $u | Out-Null; $ok=$true } catch {} }; if (-not $ok) { exit 1 }"
+set PAGES_ERR=%ERRORLEVEL%
+call :cleanup
 
 echo.
 echo Site: https://gensublimeart.github.io/Drive-My-Home/
 echo GitHub may take a minute to publish.
+if not "%PAGES_ERR%"=="0" (
+  echo.
+  echo Pages was not turned on from here. Open:
+  echo   https://github.com/gensublimeart/Drive-My-Home/settings/pages
+  echo   Source: Deploy from a branch
+  echo   Branch: main
+  echo   Folder: / ^(root^)
+)
 pause
 exit /b 0
+
+:push_failed
+call :cleanup
+echo.
+echo Push failed. Check the username and token.
+echo Use a classic token with the repo scope:
+echo https://github.com/settings/tokens/new
+pause
+exit /b 1
+
+:missing_login
+call :cleanup
+echo Username and token are both required.
+pause
+exit /b 1
 
 :missing_identity
 echo Set your Git name and email first, then run this file again:
@@ -76,14 +108,11 @@ echo   git config --global user.email "you@example.com"
 pause
 exit /b 1
 
-:pages_manual
-echo.
-echo Code is on GitHub. Turn on Pages once:
-echo   https://github.com/gensublimeart/Drive-My-Home/settings/pages
-echo   Source: Deploy from a branch
-echo   Branch: main
-echo   Folder: / (root)
-echo.
-echo Then open: https://gensublimeart.github.io/Drive-My-Home/
-pause
+:cleanup
+set "GH_TOKEN="
+set "GH_USER="
+set "GIT_ASKPASS="
+set "GIT_TERMINAL_PROMPT="
+set "GCM_INTERACTIVE="
+if defined ASKPASS if exist "%ASKPASS%" del /f /q "%ASKPASS%"
 exit /b 0

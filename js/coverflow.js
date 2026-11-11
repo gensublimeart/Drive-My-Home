@@ -59,11 +59,13 @@ function shadowTexture() {
   return new THREE.CanvasTexture(canvas);
 }
 
+const MIDDLE_INDEX = Math.floor((photos.length - 1) / 2);
+
 function readHashIndex() {
   const m = /photo-(\d+)/.exec(location.hash);
-  if (!m) return 0;
+  if (!m) return MIDDLE_INDEX;
   const i = photos.findIndex((p) => p.id === m[1].padStart(2, "0"));
-  return i < 0 ? 0 : i;
+  return i < 0 ? MIDDLE_INDEX : i;
 }
 
 function init() {
@@ -183,7 +185,9 @@ function init() {
     lastY: 0,
     lastT: 0,
     velocity: 0,
+    pointerId: -1,
     hoverIndex: -1,
+    touchIndex: -1,
     pressIndex: -1,
     shownIndex: -1,
     settleAt: 0,
@@ -341,7 +345,8 @@ function init() {
   });
 
   stage.addEventListener("pointerdown", (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || state.dragging) return;
+    state.pointerId = e.pointerId;
     state.dragging = true;
     state.dragMoved = false;
     state.dragStartX = e.clientX;
@@ -351,13 +356,21 @@ function init() {
     state.lastY = e.clientY;
     state.lastT = performance.now();
     state.velocity = 0;
-    state.pressIndex = pickIndex(e.clientX, e.clientY);
+    const picked = pickIndex(e.clientX, e.clientY);
+    // Touch has no hover, so a finger on a card gets the hover lift instead of the mouse press dip.
+    if (e.pointerType === "mouse") {
+      state.pressIndex = picked;
+    } else {
+      state.hoverIndex = -1;
+      state.touchIndex = picked;
+    }
     stage.setPointerCapture(e.pointerId);
     needsRender = true;
   });
 
   stage.addEventListener("pointermove", (e) => {
     if (state.dragging) {
+      if (e.pointerId !== state.pointerId) return;
       const dx = e.clientX - state.dragStartX;
       const dy = e.clientY - state.dragStartY;
       const vertical = useVertical();
@@ -365,6 +378,7 @@ function init() {
       if (!state.dragMoved && Math.hypot(dx, dy) > 8) {
         state.dragMoved = true;
         state.pressIndex = -1;
+        state.touchIndex = -1;
         stage.classList.add("is-dragging");
       }
       if (state.dragMoved) {
@@ -394,7 +408,7 @@ function init() {
   });
 
   function endDrag(e, cancelled) {
-    if (!state.dragging) return;
+    if (!state.dragging || e.pointerId !== state.pointerId) return;
     state.dragging = false;
     stage.classList.remove("is-dragging");
     if (stage.hasPointerCapture(e.pointerId)) stage.releasePointerCapture(e.pointerId);
@@ -409,6 +423,7 @@ function init() {
       else if (i >= 0) setTarget(i);
     }
     state.pressIndex = -1;
+    state.touchIndex = -1;
     needsRender = true;
   }
 
@@ -485,7 +500,8 @@ function init() {
     if (state.leavingAt) moving = true;
 
     cards.forEach((card, i) => {
-      const hoverT = !instant && i === state.hoverIndex && !state.dragging ? 1 : 0;
+      const hovered = (i === state.hoverIndex && !state.dragging) || i === state.touchIndex;
+      const hoverT = !instant && hovered ? 1 : 0;
       const pressT = i === state.pressIndex && state.dragging ? 1 : 0;
       const h = instant ? hoverT : damp(card.hover, hoverT, 16, dt);
       const p = instant ? pressT : damp(card.press, pressT, pressT > card.press ? 22 : 12, dt);
@@ -516,6 +532,21 @@ function init() {
   });
 
   window.addEventListener("hashchange", () => setTarget(readHashIndex()));
+
+  const IDLE_STEP_MS = 4000;
+  let idleStepTimer = 0;
+  let idleDir = 1;
+  function startIdleFlow() {
+    clearInterval(idleStepTimer);
+    idleStepTimer = setInterval(() => {
+      const front = Math.round(state.target);
+      if (front + idleDir < 0 || front + idleDir > total - 1) idleDir = -idleDir;
+      setTarget(front + idleDir);
+    }, IDLE_STEP_MS);
+  }
+  document.addEventListener("idle-start", startIdleFlow);
+  document.addEventListener("idle-end", () => clearInterval(idleStepTimer));
+  if (document.documentElement.classList.contains("is-idle")) startIdleFlow();
 
   document.body.classList.add("flow-ready");
   resize();
