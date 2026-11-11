@@ -40,6 +40,19 @@ REPORT_FIELDS = {
     "經歷": "experiences",
 }
 
+CREDITS = [
+    ("協助職員", ["黃宇為"]),
+    (
+        "新田部屋參與街坊",
+        [
+            "周賢勇", "周佳文", "李珊珊", "岑吳珍玲", "岑順欽", "劉婉雯", "黃麗嫦", "鄭美儀",
+            "勞慧琼", "蔡慶雄", "曹英堯", "伍英傑", "陳偉強", "盧珺楠", "溫愛華", "黃成",
+            "余少碧", "張九妹", "何玉琼", "王福祥", "楊紹祖", "李婉儀", "吳頌軒", "江淑芝",
+            "周淑貞", "馮偉略", "鄭凱儀", "鄭諾軒", "鄭嘉汶",
+        ],
+    ),
+]
+
 
 def parse_report_md(text: str) -> dict:
     """Read narrative fields from a Marp report.md. analysis.json is the previous draft."""
@@ -221,6 +234,21 @@ def header(prefix: str, nav: str) -> str:
 {f'''  <nav class="site-nav" aria-label="網站">
 {nav}
   </nav>''' if nav.strip() else ""}"""
+
+
+def credits() -> str:
+    groups = "\n".join(
+        f"""      <div class="credits-group">
+        <h2 class="meta">{escape(title)}</h2>
+        <ul class="credits-names">
+{chr(10).join(f"          <li>{escape(name)}</li>" for name in names)}
+        </ul>
+      </div>"""
+        for title, names in CREDITS
+    )
+    return f"""    <footer class="site-credits">
+{groups}
+    </footer>"""
 
 
 def build_index(photos: list[dict]) -> None:
@@ -484,6 +512,7 @@ def build_report(photos: list[dict], index: int, scenes: dict[str, dict]) -> Non
       <a class="btn" href="../index.html#photo-{pid}">← 返回目錄</a>
       {pager}
     </div>
+{credits()}
   </main>
 </body>
 </html>
@@ -517,6 +546,7 @@ def build_keywords() -> None:
     <ol class="keyword-grid reveal" style="--i:2">
 {items}
     </ol>
+{credits()}
   </main>
 {KEYWORD_COUNT_SCRIPT}
 </body>

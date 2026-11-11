@@ -1225,6 +1225,34 @@ html.is-viewing body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Credits footer (report + keywords pages) */
+
+.site-credits {
+  display: grid;
+  gap: 20px;
+  margin-top: 48px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.credits-group h2 {
+  margin: 0 0 8px;
+}
+
+.credits-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  font-weight: 300;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--accent-soft);
+}
+
 /* Custom cursor: shown only while the screen is touched / pressed */
 
 html.has-cursor.is-kiosk,
