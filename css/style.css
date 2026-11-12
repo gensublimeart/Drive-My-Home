@@ -35,6 +35,10 @@ html.is-kiosk {
   display: none;
 }
 
+html {
+  font-size: 150%;
+}
+
 html,
 body {
   margin: 0;

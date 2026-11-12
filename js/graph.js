@@ -333,9 +333,9 @@ if (reportNode && host) {
     ctx.textBaseline = "middle";
     nodes.forEach((node) => {
       const common = node.group === "common";
-      ctx.font = `${common ? 500 : 300} 13px ${FONT}`;
+      ctx.font = `${common ? 500 : 300} 19.5px ${FONT}`;
       if (node.textW == null) node.textW = ctx.measureText(node.label).width;
-      const box = { x: node.x + node.r + 6, y: node.drawY - 11, w: node.textW + 14, h: 22 };
+      const box = { x: node.x + node.r + 6, y: node.drawY - 16.5, w: node.textW + 20, h: 33 };
       node.box = box;
       ctx.globalAlpha = node.alpha;
       ctx.beginPath();
@@ -348,7 +348,7 @@ if (reportNode && host) {
         ctx.stroke();
       }
       ctx.fillStyle = common ? "#ffffff" : "#222222";
-      ctx.fillText(node.label, box.x + 7, node.drawY + 0.5);
+      ctx.fillText(node.label, box.x + 10, node.drawY + 0.5);
     });
     ctx.globalAlpha = 1;
   }
